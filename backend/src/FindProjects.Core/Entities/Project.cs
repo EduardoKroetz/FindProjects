@@ -7,7 +7,7 @@ public class Project : Entity
 {
     public string Title { get; set; }
     public string Description { get; set; }
-    public int UserId { get; set; }
+    public string UserId { get; set; }
     public User? User { get; set; }
     public EProjectStatus Status { get; set; }
     public DateTime DeadLine { get; set; }
@@ -19,5 +19,6 @@ public class Project : Entity
     
     public ICollection<Skill> Skills { get; set; } = [];
     public ICollection<Category> Categories { get; set; } = [];
-
+    public ICollection<Contributor> Contributors { get; set; } = [];
+    public ICollection<ProjectMessage> ProjectMessages { get; set; } = [];
 }
