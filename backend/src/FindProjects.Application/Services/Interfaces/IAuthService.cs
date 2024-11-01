@@ -7,5 +7,5 @@ namespace FindProjects.Application.Services.Interfaces;
 public interface IAuthService
 {
     Task<ResultDto<RegisterUserResponse>> RegisterAsync(RegisterUserDto registerUserDto);
-    //Task<ResultDto<string>> LoginAsync(RegisterUserDto registerUserDto);
+    Task<ResultDto<string>> LoginAsync(LoginUserDto loginUserDto);
 }

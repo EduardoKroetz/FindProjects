@@ -27,7 +27,7 @@ public class AuthService : IAuthService
         var userExists = await _userManager.FindByEmailAsync(registerUserDto.Email);
         if (userExists != null)
         {
-            _logger.LogInformation("Email já está cadastrado");
+            _logger.LogError("E-mail já está cadastrado");
             return ResultDto<RegisterUserResponse>.BadResult("Esse e-mail já está cadastrado");
         }
 
@@ -48,6 +48,28 @@ public class AuthService : IAuthService
         
         //Gerar e retornar token jwt
         var token = _tokenService.GenerateToken(user);
+        _logger.LogInformation("Usuário registrado e token gerado com sucesso");
         return ResultDto<RegisterUserResponse>.SuccessResult(new RegisterUserResponse(token, user.Id), 201);
+    }
+
+    public async Task<ResultDto<string>> LoginAsync(LoginUserDto loginUserDto)
+    {
+        var user = await _userManager.FindByEmailAsync(loginUserDto.Email);
+        if (user == null)
+        {
+            _logger.LogError($"Usuário com e-mail {loginUserDto.Email} não encontrado");
+            return ResultDto<string>.BadResult("E-mail ou senha inválidos");
+        }
+        
+        var verifyHashedPassword = _userManager.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, loginUserDto.Password);
+        if (verifyHashedPassword == PasswordVerificationResult.Failed)
+        {
+            _logger.LogError($"Senha {loginUserDto.Password} inválida para o e-mail {loginUserDto.Email}");
+            return ResultDto<string>.BadResult("E-mail ou senha inválidos");
+        }
+
+        var token = _tokenService.GenerateToken(user);
+        _logger.LogInformation($"Login realizado com sucesso para o usuário {loginUserDto.Email}");
+        return ResultDto<string>.SuccessResult(token);
     }
 }

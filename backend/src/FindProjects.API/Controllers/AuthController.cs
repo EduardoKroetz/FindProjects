@@ -30,4 +30,18 @@ public class AuthController : ControllerBase
         
         return Created($"api/users/{result.Data?.UserId}", result);
     }
+
+    [HttpPost("login")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> LoginAsync(LoginUserDto loginUserDto)
+    {
+        var result = await _authService.LoginAsync(loginUserDto);
+        if (!result.Success)
+        {
+            return StatusCode(result.StatusCode, result);
+        }
+
+        return Ok(result);
+    }
 }
