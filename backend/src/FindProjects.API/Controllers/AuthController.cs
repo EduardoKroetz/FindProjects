@@ -1,7 +1,5 @@
 using FindProjects.Application.DTOs.Users;
 using FindProjects.Application.Services.Interfaces;
-using FindProjects.Core.Entities;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FindProjects.API.Controllers;

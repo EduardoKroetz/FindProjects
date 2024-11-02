@@ -19,9 +19,11 @@ public class TokenService : ITokenService
     
     public string GenerateToken(User user)
     {
-        var jwtKey = _configuration["Jwt:Key"] ?? throw new NullReferenceException("Invalid JWT Key");
+        var jwtKey = _configuration["Jwt:Key"] ?? throw new NullReferenceException("JWT key inválida");
         var key = Encoding.ASCII.GetBytes(jwtKey);
-
+        var issuer = _configuration["Jwt:Issuer"] ?? throw new NullReferenceException("JWT Issuer inválida");
+        var audience = _configuration["Jwt:Audience"] ?? throw new NullReferenceException("JWT Audience inválida");
+        
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, user.UserName),
@@ -33,6 +35,8 @@ public class TokenService : ITokenService
         {
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddHours(8),
+            Audience = audience,
+            Issuer = issuer,
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 

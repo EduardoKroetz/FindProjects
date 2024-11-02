@@ -10,7 +10,7 @@ public class Project : Entity
     public string UserId { get; set; }
     public User? User { get; set; }
     public EProjectStatus Status { get; set; }
-    public DateTime DeadLine { get; set; }
+    public DateTime? DeadLine { get; set; }
     public bool HasBudget { get; set; }
     public decimal? Budget { get; set; }
     public int MaxContributors { get; set; } = 999;
