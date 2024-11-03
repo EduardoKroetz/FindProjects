@@ -31,4 +31,20 @@ public class ProjectsController : ControllerBase
 
         return Created($"api/projects/{result.Data?.ProjectId}", result);
     }
+
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetByIdAsync(int id)
+    {
+        var result = await _projectService.GetProjectByIdAsync(id);
+        if (!result.Success)
+        {
+            return StatusCode(result.StatusCode, result);
+        }
+
+        return Ok(result);
+    }
+    
+    
 }

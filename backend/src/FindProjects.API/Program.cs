@@ -68,6 +68,9 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+//Configure automapper
+builder.Services.AddAutoMapper(typeof(MapperProfile));
+
 //Configure Identity
 builder.Services.AddIdentity<User, IdentityRole>()
     .AddEntityFrameworkStores<FindProjectsDbContext>();

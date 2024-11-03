@@ -7,4 +7,5 @@ namespace FindProjects.Application.Services.Interfaces;
 public interface IProjectService
 {
     Task<ResultDto<CreateProjectResponse>> CreateProjectAsync(EditorProjectDto editorProjectDto, string userId);
+    Task<ResultDto<GetProjectDto>> GetProjectByIdAsync(int projectId);
 }
