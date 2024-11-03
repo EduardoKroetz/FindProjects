@@ -22,8 +22,7 @@ public class ProjectsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateAsync([FromBody] EditorProjectDto editorProjectDto)
     {
-        var userId = User.GetUserId();
-        var result = await _projectService.CreateProjectAsync(editorProjectDto, userId);
+        var result = await _projectService.CreateProjectAsync(editorProjectDto, User);
         if (!result.Success)
         {
             return StatusCode(result.StatusCode, result);
@@ -38,6 +37,21 @@ public class ProjectsController : ControllerBase
     public async Task<IActionResult> GetByIdAsync(int id)
     {
         var result = await _projectService.GetProjectByIdAsync(id);
+        if (!result.Success)
+        {
+            return StatusCode(result.StatusCode, result);
+        }
+
+        return Ok(result);
+    }
+    
+    [HttpPut("{id:int}"), Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateAsync(int id, EditorProjectDto editorProjectDto)
+    {
+        var result = await _projectService.UpdateProjectAsync(id, editorProjectDto, User);
         if (!result.Success)
         {
             return StatusCode(result.StatusCode, result);
