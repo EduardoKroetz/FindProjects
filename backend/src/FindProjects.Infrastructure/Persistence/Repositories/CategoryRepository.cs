@@ -15,4 +15,14 @@ public class CategoryRepository : Repository<Category>, ICategoryRepository
             .Where(x => ids.Contains(x.Id))
             .ToListAsync();
     }
+
+    public async Task<Category?> GetByName(string name)
+    {
+        return await _context.Categories.FirstOrDefaultAsync(x => x.Name == name);
+    }
+
+    public async Task<IEnumerable<Category>> GetAllAsync()
+    {
+        return await _context.Categories.ToListAsync();
+    }
 }
