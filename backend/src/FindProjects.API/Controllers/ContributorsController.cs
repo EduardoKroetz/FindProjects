@@ -29,4 +29,19 @@ public class ContributorsController : ControllerBase
 
         return Ok(result);
     }
+    
+    [HttpDelete("{contributorId:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeleteAsync(int contributorId)
+    {
+        var result = await _contributorService.RemoveContributorAsync(contributorId, User);
+        if (!result.Success)
+        {
+            return StatusCode(result.StatusCode, result);
+        }
+
+        return Ok(result);
+    }
 }

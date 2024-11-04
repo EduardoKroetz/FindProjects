@@ -69,4 +69,43 @@ public class ContributorService : IContributorService
         
         return ResultDto<int>.SuccessResult(contributor.Id, 201);
     }
+    
+     public async Task<ResultDto<object?>> RemoveContributorAsync(int contributorId, ClaimsPrincipal authenticatedUserClaims)
+    {
+        //Buscar usuário
+        var authenticatedUser = await _userManager.GetUserAsync(authenticatedUserClaims);
+        if (authenticatedUser == null)
+        {
+            return ResultDto<object?>.BadResult("Usuário não encontrado", 404);
+        }
+
+        //Buscar e verificar contribuidor
+        var contributor = await _contributorRepository.GetById(contributorId);
+        if (contributor == null)
+        {
+            return ResultDto<object?>.BadResult("Contribuidor não encontrado", 404);
+        }
+        
+        //Buscar projeto
+        var project = await _projectRepository.GetProjectWithRelations(contributor.ProjectId);
+        if (project == null)
+        {
+            _logger.LogWarning($"Projeto {contributor.ProjectId} não encontrado");
+            return ResultDto<object?>.BadResult("Projeto não encontrado", 404);
+        }
+
+        //Verificar se o usuário possui permissão para deletar o projeto
+        if (authenticatedUser.Id != project.UserId)
+        {
+            _logger.LogWarning($"Usuário {authenticatedUser.Id} não possui permissão para alterar o projeto {project.Id}");
+            return ResultDto<object?>.BadResult("Você não tem permissão para acessar esse recurso", 403);
+        }
+        
+        //Remover contribuidor do projeto
+        await _contributorRepository.RemoveAsync(contributor);
+        
+        _logger.LogInformation($"Usuário {contributor.UserId} removido do projeto {project.Id} como contribuidor {contributorId}");
+        
+        return ResultDto<object?>.SuccessResult(null, 200);
+    }
 }

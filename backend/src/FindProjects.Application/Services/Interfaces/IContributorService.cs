@@ -6,5 +6,6 @@ namespace FindProjects.Application.Services.Interfaces;
 public interface IContributorService
 {
     Task<ResultDto<int>> CreateContributorAsync(int projectId, string userId, ClaimsPrincipal authenticatedUserClaims);
+    Task<ResultDto<object?>> RemoveContributorAsync(int contributorId, ClaimsPrincipal authenticatedUserClaims);
 
 }
