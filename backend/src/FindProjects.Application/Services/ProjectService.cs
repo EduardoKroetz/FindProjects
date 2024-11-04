@@ -6,6 +6,7 @@ using FindProjects.Application.DTOs.Responses;
 using FindProjects.Application.Services.Interfaces;
 using FindProjects.Core.Common;
 using FindProjects.Core.Entities;
+using FindProjects.Core.Enums;
 using FindProjects.Core.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -80,25 +81,13 @@ public class ProjectService : IProjectService
     
     public async Task<ResultDto<object?>> UpdateProjectAsync(int projectId, EditorProjectDto editorProjectDto, ClaimsPrincipal claimsPrincipal)
     {
-        var user = await _userManager.GetUserAsync(claimsPrincipal);
-        if (user == null)
+        var result = await GetProjectAndVerifyUserPermission(projectId, claimsPrincipal);
+        if (!result.Success)
         {
-            return ResultDto<object?>.BadResult("Usuário não encontrado", 404);
-        }
-        
-        var project = await _projectRepository.GetById(projectId);
-        if (project == null)
-        {
-            _logger.LogWarning($"Projeto {projectId} não encontrado");
-            return ResultDto<object?>.BadResult("Projeto não encontrado", 404);
+            return ResultDto<object?>.BadResult(result.Errors, result.StatusCode);
         }
 
-        //Verificar se o usuário possui permissão para atualizar o projeto
-        if (user.Id != project.UserId)
-        {
-            _logger.LogWarning($"Tentativa de atualização do projeto {projectId} pelo usuário {user.Id} falhou: usuário não possui permissão.");
-            return ResultDto<object?>.BadResult("Você não tem permissão para acessar esse recurso", 403);
-        }
+        var project = result.Data!;
         
         //Buscar skills
         var skills = await _skillRepository.GetSkillsByIds(editorProjectDto.SkillsIds.ToList());
@@ -106,7 +95,7 @@ public class ProjectService : IProjectService
         //Buscar categorias
         var categories = await _categoryRepository.GetCategoriesByIds(editorProjectDto.CategoriesIds.ToList());
 
-        var result = project.Update
+        var updateResult = project.Update
         (
             editorProjectDto.Title,
             editorProjectDto.Description,
@@ -117,8 +106,8 @@ public class ProjectService : IProjectService
             editorProjectDto.MaxContributors
         );
 
-        if (result.IsSuccess == false)
-            return ResultDto<object?>.BadResult(result.ErrorMessage);
+        if (updateResult.IsSuccess == false)
+            return ResultDto<object?>.BadResult(updateResult.ErrorMessage!);
 
         project.Skills = skills;
         project.Categories = categories;
@@ -132,29 +121,62 @@ public class ProjectService : IProjectService
 
     public async Task<ResultDto<object?>> DeleteProjectAsync(int projectId, ClaimsPrincipal claimsPrincipal)
     {
-        var user = await _userManager.GetUserAsync(claimsPrincipal);
-        if (user == null)
+        var result = await GetProjectAndVerifyUserPermission(projectId, claimsPrincipal);
+        if (!result.Success)
         {
-            return ResultDto<object?>.BadResult("Usuário não encontrado");
+            return ResultDto<object?>.BadResult(result.Errors, result.StatusCode);
         }
 
-        var project = await _projectRepository.GetById(projectId);
-        if (project == null)
-        {
-            _logger.LogWarning($"Projeto {projectId} não encontrado");
-            return ResultDto<object?>.BadResult("Projeto não encontrado");
-        }
-
-        //Verificar se o usuário possui permissão para deletar o projeto
-        if (user.Id != project.UserId)
-        {
-            _logger.LogWarning($"Tentativa de deleção do projeto {projectId} pelo usuário {user.Id} falhou: usuário não possui permissão.");
-            return ResultDto<object?>.BadResult("Você não tem permissão para acessar esse recurso", 403);
-        }
+        var project = result.Data!;
         
         await _projectRepository.RemoveAsync(project);
         _logger.LogInformation($"Projeto {projectId} deletado");
         
         return ResultDto<object?>.SuccessResult(null, 204);
+    }
+    
+    public async Task<ResultDto<object?>> FinishProjectAsync(int projectId, ClaimsPrincipal claimsPrincipal)
+    {
+        var result = await GetProjectAndVerifyUserPermission(projectId, claimsPrincipal);
+        if (!result.Success)
+        {
+            return ResultDto<object?>.BadResult(result.Errors, result.StatusCode);
+        }
+
+        var project = result.Data!;
+        
+        project.UpdateStatus(EProjectStatus.Finished);
+        
+        await _projectRepository.UpdateAsync(project);
+        _logger.LogInformation($"Projeto {projectId} finalizado");
+        
+        return ResultDto<object?>.SuccessResult(null, 204);
+    }
+
+    private async Task<ResultDto<Project>> GetProjectAndVerifyUserPermission(int projectId, ClaimsPrincipal claimsPrincipal)
+    {
+        //Buscar usuário
+        var user = await _userManager.GetUserAsync(claimsPrincipal);
+        if (user == null)
+        {
+            return ResultDto<Project>.BadResult("Usuário não encontrado", 404);
+        }
+
+        //Buscar projeto
+        var project = await _projectRepository.GetById(projectId);
+        if (project == null)
+        {
+            _logger.LogWarning($"Projeto {projectId} não encontrado");
+            return ResultDto<Project>.BadResult("Projeto não encontrado", 404);
+        }
+
+        //Verificar se o usuário possui permissão para deletar o projeto
+        if (user.Id != project.UserId)
+        {
+            _logger.LogWarning($"Usuário {user.Id} não possui permissão para alterar o projeto {projectId}");
+            return ResultDto<Project>.BadResult("Você não tem permissão para acessar esse recurso", 403);
+        }
+
+        return ResultDto<Project>.SuccessResult(project);
     }
 }

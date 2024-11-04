@@ -12,4 +12,5 @@ public interface IProjectService
 
     Task<ResultDto<object?>> UpdateProjectAsync(int projectId, EditorProjectDto editorProjectDto, ClaimsPrincipal claimsPrincipal);
     Task<ResultDto<object?>> DeleteProjectAsync(int projectId, ClaimsPrincipal claimsPrincipal);
+    Task<ResultDto<object?>> FinishProjectAsync(int projectId, ClaimsPrincipal claimsPrincipal);
 }

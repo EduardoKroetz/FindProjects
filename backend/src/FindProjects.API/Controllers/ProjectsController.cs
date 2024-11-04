@@ -57,21 +57,36 @@ public class ProjectsController : ControllerBase
             return StatusCode(result.StatusCode, result);
         }
 
-        return Ok(result);
+        return NoContent();
     }
     
-        [HttpDelete("{id:int}"), Authorize]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> DeleteAsync(int id)
+    [HttpDelete("{id:int}"), Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeleteAsync(int id)
+    {
+        var result = await _projectService.DeleteProjectAsync(id, User);
+        if (!result.Success)
         {
-            var result = await _projectService.DeleteProjectAsync(id, User);
-            if (!result.Success)
-            {
-                return StatusCode(result.StatusCode, result);
-            }
-    
-            return Ok(result);
+            return StatusCode(result.StatusCode, result);
         }
+
+        return NoContent();
+    }
+    
+    [HttpPatch("finish/{id:int}"), Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> FinishAsync(int id)
+    {
+        var result = await _projectService.FinishProjectAsync(id, User);
+        if (!result.Success)
+        {
+            return StatusCode(result.StatusCode, result);
+        }
+
+        return NoContent();
+    }
 }
