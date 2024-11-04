@@ -60,5 +60,18 @@ public class ProjectsController : ControllerBase
         return Ok(result);
     }
     
+        [HttpDelete("{id:int}"), Authorize]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> DeleteAsync(int id)
+        {
+            var result = await _projectService.DeleteProjectAsync(id, User);
+            if (!result.Success)
+            {
+                return StatusCode(result.StatusCode, result);
+            }
     
+            return Ok(result);
+        }
 }

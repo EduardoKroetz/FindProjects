@@ -129,4 +129,32 @@ public class ProjectService : IProjectService
         
         return ResultDto<object?>.SuccessResult(null, 204);
     }
+
+    public async Task<ResultDto<object?>> DeleteProjectAsync(int projectId, ClaimsPrincipal claimsPrincipal)
+    {
+        var user = await _userManager.GetUserAsync(claimsPrincipal);
+        if (user == null)
+        {
+            return ResultDto<object?>.BadResult("Usuário não encontrado");
+        }
+
+        var project = await _projectRepository.GetById(projectId);
+        if (project == null)
+        {
+            _logger.LogWarning($"Projeto {projectId} não encontrado");
+            return ResultDto<object?>.BadResult("Projeto não encontrado");
+        }
+
+        //Verificar se o usuário possui permissão para deletar o projeto
+        if (user.Id != project.UserId)
+        {
+            _logger.LogWarning($"Tentativa de deleção do projeto {projectId} pelo usuário {user.Id} falhou: usuário não possui permissão.");
+            return ResultDto<object?>.BadResult("Você não tem permissão para acessar esse recurso", 403);
+        }
+        
+        await _projectRepository.RemoveAsync(project);
+        _logger.LogInformation($"Projeto {projectId} deletado");
+        
+        return ResultDto<object?>.SuccessResult(null, 204);
+    }
 }
