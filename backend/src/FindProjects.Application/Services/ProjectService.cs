@@ -21,7 +21,7 @@ public class ProjectService : IProjectService
     private readonly ILogger<ProjectService> _logger;
     private readonly IMapper _mapper;
     private readonly UserManager<User> _userManager;
-
+ 
     public ProjectService(IProjectRepository projectRepository, ICategoryRepository categoryRepository, ISkillRepository skillRepository, ILogger<ProjectService> logger, IMapper mapper, UserManager<User> userManager)
     {
         _projectRepository = projectRepository;
@@ -40,12 +40,11 @@ public class ProjectService : IProjectService
             return ResultDto<CreateProjectResponse>.BadResult("Usuário não encontrado");
         }
         
-        //Buscar skills
+        //Buscar habilidades e categorias do projeto
         var skills = await _skillRepository.GetSkillsByIds(editorProjectDto.SkillsIds.ToList());
-        
-        //Buscar categorias
         var categories = await _categoryRepository.GetCategoriesByIds(editorProjectDto.CategoriesIds.ToList());
         
+        //Criar novo projeto
         var project = new Project
         (
              editorProjectDto.Title,
@@ -57,8 +56,8 @@ public class ProjectService : IProjectService
              editorProjectDto.Budget,
              editorProjectDto.MaxContributors
         );
-
         await _projectRepository.AddAsync(project);
+        
         _logger.LogInformation($"Projeto {project.Id} criado");
         
         return ResultDto<CreateProjectResponse>.SuccessResult(new CreateProjectResponse(project.Id), 201);
@@ -74,27 +73,28 @@ public class ProjectService : IProjectService
         }
 
         var projectDto = _mapper.Map<GetProjectDto>(project);
-        _logger.LogInformation($"Projeto {projectId} obtido com sucesso");
+        
+        _logger.LogInformation($"Projeto {projectId} obtido");
         
         return ResultDto<GetProjectDto>.SuccessResult(projectDto);
     }
     
     public async Task<ResultDto<object?>> UpdateProjectAsync(int projectId, EditorProjectDto editorProjectDto, ClaimsPrincipal claimsPrincipal)
     {
-        var result = await GetProjectAndVerifyUserPermission(projectId, claimsPrincipal);
-        if (!result.Success)
+        var projectResult = await GetProjectAndVerifyUserPermission(projectId, claimsPrincipal);
+        if (!projectResult.Success)
         {
-            return ResultDto<object?>.BadResult(result.Errors, result.StatusCode);
+            return ResultDto<object?>.BadResult(projectResult.Errors, projectResult.StatusCode);
         }
-
-        var project = result.Data!;
         
-        //Buscar skills
+        //Buscar habilidades e categorias do projeto
         var skills = await _skillRepository.GetSkillsByIds(editorProjectDto.SkillsIds.ToList());
-        
-        //Buscar categorias
         var categories = await _categoryRepository.GetCategoriesByIds(editorProjectDto.CategoriesIds.ToList());
 
+        //Atualizar informações do projeto
+        var project = projectResult.Data!;
+        project.Skills = skills;
+        project.Categories = categories;
         var updateResult = project.Update
         (
             editorProjectDto.Title,
@@ -105,13 +105,12 @@ public class ProjectService : IProjectService
             editorProjectDto.Budget,
             editorProjectDto.MaxContributors
         );
-
+        
+        //Verificar atualização
         if (updateResult.IsSuccess == false)
             return ResultDto<object?>.BadResult(updateResult.ErrorMessage!);
-
-        project.Skills = skills;
-        project.Categories = categories;
         
+        //Salvar atualização
         await _projectRepository.UpdateAsync(project);
         
         _logger.LogInformation($"Projeto {projectId} atualizado");
@@ -121,15 +120,16 @@ public class ProjectService : IProjectService
 
     public async Task<ResultDto<object?>> DeleteProjectAsync(int projectId, ClaimsPrincipal claimsPrincipal)
     {
-        var result = await GetProjectAndVerifyUserPermission(projectId, claimsPrincipal);
-        if (!result.Success)
+        var projectResult = await GetProjectAndVerifyUserPermission(projectId, claimsPrincipal);
+        if (!projectResult.Success)
         {
-            return ResultDto<object?>.BadResult(result.Errors, result.StatusCode);
+            return ResultDto<object?>.BadResult(projectResult.Errors, projectResult.StatusCode);
         }
 
-        var project = result.Data!;
-        
+        //Remover projeto
+        var project = projectResult.Data!;
         await _projectRepository.RemoveAsync(project);
+        
         _logger.LogInformation($"Projeto {projectId} deletado");
         
         return ResultDto<object?>.SuccessResult(null, 204);
@@ -137,22 +137,29 @@ public class ProjectService : IProjectService
     
     public async Task<ResultDto<object?>> FinishProjectAsync(int projectId, ClaimsPrincipal claimsPrincipal)
     {
-        var result = await GetProjectAndVerifyUserPermission(projectId, claimsPrincipal);
-        if (!result.Success)
+        var projectResult = await GetProjectAndVerifyUserPermission(projectId, claimsPrincipal);
+        if (!projectResult.Success)
         {
-            return ResultDto<object?>.BadResult(result.Errors, result.StatusCode);
+            return ResultDto<object?>.BadResult(projectResult.Errors, projectResult.StatusCode);
         }
-
-        var project = result.Data!;
         
+        //Atualizar status para 'Finished'
+        var project = projectResult.Data!;
         project.UpdateStatus(EProjectStatus.Finished);
-        
         await _projectRepository.UpdateAsync(project);
+        
         _logger.LogInformation($"Projeto {projectId} finalizado");
         
         return ResultDto<object?>.SuccessResult(null, 204);
     }
-
+    
+    
+    /// <summary>
+    /// Buscar e verificar o usuário autenticado e sua permissão de alteração no projeto
+    /// </summary>
+    /// <param name="projectId"></param>
+    /// <param name="claimsPrincipal"></param>
+    /// <returns></returns>
     private async Task<ResultDto<Project>> GetProjectAndVerifyUserPermission(int projectId, ClaimsPrincipal claimsPrincipal)
     {
         //Buscar usuário

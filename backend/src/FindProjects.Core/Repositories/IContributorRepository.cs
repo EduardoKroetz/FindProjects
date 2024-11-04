@@ -3,7 +3,7 @@ using FindProjects.Core.Repositories.Base;
 
 namespace FindProjects.Core.Repositories;
 
-public interface IProjectRepository : IRepository<Project>
+public interface IContributorRepository : IRepository<Contributor>
 {
-    Task<Project?> GetProjectWithRelations(int projectId);
+    
 }
